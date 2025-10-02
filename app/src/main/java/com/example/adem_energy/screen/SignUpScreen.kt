@@ -1,5 +1,7 @@
 package com.example.adem_energy.screen
 
+
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,9 +14,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -22,33 +24,65 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.adem_energy.R
+import com.example.adem_energy.firebase.AuthRepositoryImpl
+import com.example.adem_energy.firebase.AuthUser
+import com.example.adem_energy.firebase.AuthViewModel
+import com.example.adem_energy.firebase.AuthViewModelFactory
+import com.example.adem_energy.firebase.ResultState
+import com.example.adem_energy.realtime_firebase.RealTimeDbRepository
+import com.example.adem_energy.realtime_firebase.RealTimeUser
+import com.example.adem_energy.realtime_firebase.RealTimeViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(navController: NavController) {
-    // ✅ Professional Indigo → Blue
-    val primaryIndigo = Color(0xFF3F51B5)
-    val primaryBlue = Color(0xFF2196F3)
 
-    val professionalEnergyGradient = Brush.verticalGradient(
-        colors = listOf(primaryIndigo, primaryBlue)
-    )
+    // 🎨 Theme Colors
+    val primaryPurple = Color(0xFF9C27B0)
+    val secondaryPurple = Color(0xFFBA68C8)
 
     val backgroundGradient = Brush.verticalGradient(
-        listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)) // light professional background
+        listOf(Color(0xFFF3E5F5), Color(0xFFE1BEE7))
     )
+    val professionalEnergyGradient = Brush.verticalGradient(
+        colors = listOf(primaryPurple, secondaryPurple)
+    )
+
+    val context = LocalContext.current
+    val databaseReference = FirebaseDatabase.getInstance().reference
+    val repository = remember { RealTimeDbRepository(databaseReference, context) }
+    val realTimeViewModel = remember { RealTimeViewModel(repository) }
+
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // ✅ Firebase Auth ViewModel
+    val viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(AuthRepositoryImpl(FirebaseAuth.getInstance(), context))
+    )
+
     Surface(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundGradient), // ✅ updated background
+            .background(backgroundGradient),
         color = Color.Transparent
     ) {
         Column(
@@ -68,89 +102,97 @@ fun SignUpScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Title
             Text(
                 text = "Create Account",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = primaryIndigo
+                color = primaryPurple
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Name Field
-            OutlinedTextField(
+            CustomTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
+                label = "Name"
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
             // Email Field
-            OutlinedTextField(
+            CustomTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
+                label = "Email"
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
             // Password Field
-            OutlinedTextField(
+            CustomTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
-                singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    val image =
-                        if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = image,
-                            contentDescription = "Toggle Password Visibility",
-                            tint = primaryIndigo
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
+                label = "Password",
+                isPassword = true,
+                passwordVisible = passwordVisible,
+                onToggleVisibility = { passwordVisible = !passwordVisible },
+                tintColor = primaryPurple
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Sign Up Button with gradient
+            // ✅ Sign Up Button
             Button(
-                onClick = { /* TODO: Handle signup */ },
+                onClick = {
+                    if (name.isBlank() || email.isBlank() || password.isBlank()) {
+                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    val authUser = AuthUser(email = email, password = password)
+                    isLoading = true
+                    scope.launch {
+                        viewModel.createUser(authUser).collect { result ->
+                            when (result) {
+                                is ResultState.Success -> {
+                                    // ✅ Save in Realtime Database
+                                    val realTimeItem = RealTimeUser.RealTimeItems(
+                                        userFirstName = name,
+                                        email = email,
+                                        password = password
+                                    )
+                                    realTimeViewModel.insert(realTimeItem)
+
+
+                                    isLoading = false
+                                    Toast.makeText(
+                                        context,
+                                        "SignUp + DB Save Successful",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.popBackStack()
+                                }
+
+                                is ResultState.Error -> {
+                                    isLoading = false
+                                    Toast.makeText(
+                                        context,
+                                        result.exception.message ?: "Auth Error",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                ResultState.Loading -> {
+                                    isLoading = true
+                                }
+                            }
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
-                    .shadow(6.dp, RoundedCornerShape(14.dp)),
+                    .height(54.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                 shape = RoundedCornerShape(14.dp),
                 contentPadding = PaddingValues()
@@ -158,28 +200,32 @@ fun SignUpScreen(navController: NavController) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            professionalEnergyGradient,
-                            shape = RoundedCornerShape(14.dp)
-                        ),
+                        .background(professionalEnergyGradient, shape = RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "Sign Up",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            "Sign Up",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Already have account
             Text(
                 text = "Already have an account? Login",
                 fontSize = 15.sp,
-                color = primaryBlue,
+                color = secondaryPurple,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -188,3 +234,50 @@ fun SignUpScreen(navController: NavController) {
         }
     }
 }
+
+/**
+ * ✅ Reusable TextField Composable
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    isPassword: Boolean = false,
+    passwordVisible: Boolean = false,
+    onToggleVisibility: (() -> Unit)? = null,
+    tintColor: Color = Color.Gray
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+        trailingIcon = if (isPassword) {
+            {
+                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                IconButton(onClick = { onToggleVisibility?.invoke() }) {
+                    Icon(
+                        imageVector = image,
+                        contentDescription = "Toggle Password Visibility",
+                        tint = tintColor
+                    )
+                }
+            }
+        } else null,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color.Transparent,
+            unfocusedBorderColor = Color.Transparent,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White
+        )
+    )
+}
+
+/**
+ * ✅ Email Sender Helper
+ */

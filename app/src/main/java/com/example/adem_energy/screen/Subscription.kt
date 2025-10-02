@@ -39,37 +39,46 @@ import com.example.adem_energy.R
 fun Subscription(navController: NavController) {
     var selectedPlan by remember { mutableStateOf("Monthly") }
 
-    val professionalEnergyGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF3F51B5), // Indigo
-            Color(0xFF2196F3)  // Blue
+    // ✅ Background gradient (Lavender → Light Purple)
+    val backgroundGradient = Brush.verticalGradient(
+        listOf(
+            Color(0xFFF3E5F5), // Very Light Lavender
+            Color(0xFFE1BEE7)  // Light Purple
         )
     )
 
-    val backgroundGradient = Brush.verticalGradient(
-        listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)) // Light blueish background for a professional feel
+// ✅ Professional Purple Gradient (main subscription highlight)
+    val professionalEnergyGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF9C27B0), // Deep Purple
+            Color(0xFFBA68C8)  // Medium Purple
+        )
     )
+
 
     Column(
         modifier = Modifier
-            .fillMaxSize().verticalScroll(rememberScrollState())
-            .background(backgroundGradient)
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .background(backgroundGradient) // ✅ purple background
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-
+        // 🔹 Logo
         Image(
-            painter = painterResource(id = R.drawable.logo), // Ensure you have a suitable logo
+            painter = painterResource(id = R.drawable.logo),
             contentDescription = "App Logo",
-            modifier = Modifier
-                .size(250.dp)
+            modifier = Modifier.size(250.dp)
         )
+
+        // 🔹 Title
         Text(
-            text = "Safety Healing Activation ", // More professional title
+            text = "Safety Healing Activation",
             fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center,
-            color = Color(0xFF1A237E) // Darker, more professional blue
+            fontWeight = FontWeight.ExtraBold,
+            textAlign = TextAlign.Center,
+            color = Color(0xFF4A148C) // Dark Purple for title
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -94,7 +103,7 @@ fun Subscription(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Subscription Options
+        // 🔹 Subscription Options with Purple Gradient
         SubscriptionOption(
             price = "$14.99",
             duration = "Monthly",
@@ -147,13 +156,13 @@ fun SubscriptionOption(
     onClick: () -> Unit
 ) {
     val backgroundColor = if (isSelected) {
-        gradient
+        gradient // ✅ Purple gradient for selected
     } else {
-        Brush.horizontalGradient(listOf(Color.White, Color.White)) // Solid white for unselected
+        Brush.horizontalGradient(listOf(Color.White, Color.White)) // White for unselected
     }
 
     val textColor = if (isSelected) Color.White else Color.Black
-    val borderColor = if (isSelected) Color.Transparent else Color(0xFFE0E0E0) // Light gray border for unselected
+    val borderColor = if (isSelected) Color.Transparent else Color(0xFFE0E0E0)
 
     Box(
         modifier = Modifier

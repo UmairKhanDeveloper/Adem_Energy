@@ -23,18 +23,21 @@ import com.example.adem_energy.R
 @Composable
 fun HealingScreen(navController: NavController) {
 
-    // ✅ Professional gradients
+    // 🌸 Purple Theme Gradients
     val backgroundGradient = Brush.verticalGradient(
-        listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB))
+        listOf(
+            Color(0xFFF3E5F5), // Very Light Lavender
+            Color(0xFFE1BEE7)  // Light Purple
+        )
     )
 
-    val professionalEnergyGradient = listOf(
-        Color(0xFF3F51B5), // Indigo
-        Color(0xFF2196F3)  // Blue
+    val purpleEnergyGradient = listOf(
+        Color(0xFF9C27B0), // Primary Purple
+        Color(0xFFBA68C8)  // Light Purple Accent
     )
 
     val primaryTextColor = Color(0xFF212121)
-    val accentTextColor = Color(0xFF3F51B5)
+    val accentTextColor = Color(0xFF9C27B0) // Purple for title
 
     Column(
         modifier = Modifier
@@ -48,7 +51,7 @@ fun HealingScreen(navController: NavController) {
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "SHAH-Sr369 Logo",
             modifier = Modifier
-                .size(220.dp) // Slightly smaller for balance
+                .size(220.dp)
                 .padding(bottom = 16.dp),
             contentScale = ContentScale.Fit
         )
@@ -114,17 +117,17 @@ fun HealingScreen(navController: NavController) {
             GradientButton(
                 text = "Specific Remedies",
                 onClick = { navController.navigate(Screen.ProgrammeScreen.route) },
-                gradientColors = professionalEnergyGradient
+                gradientColors = purpleEnergyGradient // ✅ Purple Gradient
             )
 
             GradientButton(
                 text = "Holistic Remedies",
                 onClick = { navController.navigate(Screen.ImprintScreen.route) },
-                gradientColors = professionalEnergyGradient.reversed()
+                gradientColors = purpleEnergyGradient.reversed() // ✅ Reverse Purple Gradient
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp)) // Bottom spacing for balance
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -141,7 +144,7 @@ fun GradientButton(
         shape = RoundedCornerShape(28.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp) // Adjusted height for proportion
+            .height(56.dp)
             .padding(horizontal = 16.dp),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp)
     ) {
@@ -163,3 +166,4 @@ fun GradientButton(
         }
     }
 }
+

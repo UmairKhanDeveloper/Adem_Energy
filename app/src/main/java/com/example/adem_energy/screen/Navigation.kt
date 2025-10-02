@@ -23,15 +23,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 
 @Composable
 fun Navigation(navController: NavHostController) {
@@ -48,6 +51,7 @@ fun Navigation(navController: NavHostController) {
         composable(Screen.RemedyScreen.route) { RemedyScreen(navController) }
         composable(Screen.ProgrammeScreen.route) { ProgrammeScreen(navController) }
         composable(Screen.SpectroChromeScreen.route) { SpectroChromeScreen(navController) }
+
 
     }
 }
@@ -69,10 +73,22 @@ sealed class Screen(val route: String, val title: String,val icon: ImageVector) 
 
 @Composable
 fun BottomNavigation(navController: NavHostController) {
+    // Gradient definitions
+    val purpleEnergyGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFF9C27B0), // Purple
+            Color(0xFFBA68C8)  // Light Purple
+        )
+    )
+    val backgroundGradient = Brush.verticalGradient(
+        listOf(Color(0xFFF3E5F5), Color(0xFFE1BEE7))
+    )
+
+    // Colors for navigation bar
     val purpleDark = Color(0xFF3F2A5F)
     val lightPurple = Color(0xFFEDE7F6)
     val greyText = Color(0xFFB0B0B0)
-    val navBarBackground = Color(0xFFF8F5FF)
+    val navBarBackground = Color(0xFF9C27B0)
 
     val items = listOf(
         Screen.RemedyScreen,
@@ -114,7 +130,7 @@ fun BottomNavigation(navController: NavHostController) {
                 label = {
                     Text(
                         text = screen.title,
-                        color = if (isSelected) purpleDark else greyText,
+                        color = if (isSelected) Color.White else greyText,
                         style = if (isSelected) {
                             MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.SemiBold
@@ -131,12 +147,13 @@ fun BottomNavigation(navController: NavHostController) {
                     selectedTextColor = purpleDark,
                     unselectedIconColor = greyText,
                     unselectedTextColor = greyText,
-                    indicatorColor = lightPurple // Use your consistent light purple
+                    indicatorColor = lightPurple
                 )
             )
         }
     }
 }
+
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable

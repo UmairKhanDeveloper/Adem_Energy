@@ -31,32 +31,40 @@ import com.example.adem_energy.R
 import com.example.adem_energy.screen.Screen
 
 // ✅ Background gradients (your professional colors)
+// 🎨 Gradients & Colors
 private val BackgroundGradient = Brush.verticalGradient(
-    listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)) // Light blueish background
+    listOf(
+        Color(0xFFF3E5F5), // Very Light Lavender
+        Color(0xFFE1BEE7)  // Light Purple
+    )
 )
 
 private val ProfessionalEnergyGradient = Brush.verticalGradient(
     colors = listOf(
-        Color(0xFF3F51B5), // Indigo
-        Color(0xFF2196F3)  // Blue
+        Color(0xFF9C27B0), // Deep Purple
+        Color(0xFFBA68C8)  // Medium Purple
     )
 )
 
-// ✅ Button gradient (kept same but can be aligned with ProfessionalEnergyGradient if needed)
+// ✅ Button gradient (Deep → Medium Purple)
 private val ButtonPrimaryGradient = Brush.horizontalGradient(
-    listOf(Color(0xFF3F51B5), Color(0xFF2196F3)) // Indigo → Blue
+    listOf(
+        Color(0xFF9C27B0), // Deep Purple
+        Color(0xFFBA68C8)  // Medium Purple
+    )
 )
 
 private val LightText = Color.White
 private val DarkText = Color(0xFF222222)
 
+// 🎨 Fonts
 private val AppFont = FontFamily(
     Font(resId = R.font.regular, weight = FontWeight.Normal),
     Font(resId = R.font.medium, weight = FontWeight.Medium),
     Font(resId = R.font.bold, weight = FontWeight.Bold)
 )
 
-// Text styles
+// 🎨 Text Styles
 private val HeadlineStyle = TextStyle(
     fontFamily = AppFont,
     fontWeight = FontWeight.Bold,
@@ -107,7 +115,7 @@ fun SubscriptionScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(BackgroundGradient) // ✅ applied your background gradient
+                .background(BackgroundGradient) // ✅ Purple gradient background
         ) {
             Column(
                 modifier = Modifier
@@ -123,10 +131,9 @@ fun SubscriptionScreen(
                 ) {
                     // 🔹 App Logo
                     Image(
-                        painter = painterResource(id = R.drawable.logo), // Ensure you have a suitable logo
+                        painter = painterResource(id = R.drawable.logo),
                         contentDescription = "App Logo",
-                        modifier = Modifier
-                            .size(220.dp)
+                        modifier = Modifier.size(220.dp)
                     )
 
                     // 🔹 Title & Subtitle
@@ -155,7 +162,7 @@ fun SubscriptionScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
-                                    ButtonPrimaryGradient, // ✅ Indigo → Blue
+                                    ButtonPrimaryGradient, // ✅ Purple gradient
                                     shape = RoundedCornerShape(16.dp)
                                 ),
                             contentAlignment = Alignment.Center
@@ -189,10 +196,10 @@ fun SubscriptionScreen(
                         text = "SHAH-Sr369 is not intended to replace professional medical advice or approved treatments. It is not intended to diagnose or treat any health condition.",
                         style = DisclaimerBodyStyle
                     )
-
-
                 }
+
                 Spacer(modifier = Modifier.height(10.dp))
+
                 // 🔹 Open App Button
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Button(
@@ -209,7 +216,7 @@ fun SubscriptionScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
-                                    ButtonPrimaryGradient, // ✅ Indigo → Blue
+                                    ButtonPrimaryGradient, // ✅ Purple gradient
                                     shape = RoundedCornerShape(16.dp)
                                 ),
                             contentAlignment = Alignment.Center

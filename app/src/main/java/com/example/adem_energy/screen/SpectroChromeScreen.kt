@@ -1,6 +1,7 @@
 package com.example.adem_energy.screen
 
 import android.R.attr.textColor
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Whatsapp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerValue
@@ -39,10 +41,13 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -58,7 +63,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,28 +73,42 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.adem_energy.R
+import com.example.adem_energy.firebase.ResultState
+import com.example.adem_energy.realtime_firebase.RealTimeDbRepository
+import com.example.adem_energy.realtime_firebase.RealTimeUser
+import com.example.adem_energy.realtime_firebase.RealTimeViewModel
+import com.github.skydoves.colorpicker.compose.AlphaSlider
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
+import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpectroChromeScreen(navController: NavController) {
 
+// 🌌 Purple Theme (names unchanged)
     val professionalEnergyGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF3F51B5), // Indigo
-            Color(0xFF2196F3)  // Blue
+            Color(0xFF8E24AA), // Deep Purple
+            Color(0xFFBA68C8)  // Soft Lavender Purple
         )
     )
+
     val backgroundGradient = Brush.verticalGradient(
-        listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)) // Light bluish background for a professional feel
+        listOf(
+            Color(0xFFF3E5F5), // Light lavender background
+            Color(0xFFE1BEE7)  // Soft pastel purple
+        )
     )
+    val context = LocalContext.current
+    val databaseReference = FirebaseDatabase.getInstance().reference.child("SpectroChrome")
+    val repository = remember { RealTimeDbRepository(databaseReference, context) }
+    val realTimeViewModel = remember { RealTimeViewModel(repository) }
+    val purpleDark = Color(0xFF6A1B9A)      // Rich royal purple (for text / accents)
 
 
-    // Original colors (some might be replaced or adjusted)
-    val purpleDark = Color(0xFF3F51B5) // Using the indigo from your gradient for consistency
-    val surfaceLight = Color(0xFFF0F8FF) // A very light blue for surface elements
-    val borderLight = Color(0xFF90CAF9) // A light blue for borders
-
+    val scope = rememberCoroutineScope()
     var textField by remember { mutableStateOf("") }
     var potency by remember { mutableStateOf("") }
 
@@ -137,7 +158,7 @@ fun SpectroChromeScreen(navController: NavController) {
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(64.dp)
+                                    .size(60.dp)
                                     .clip(RoundedCornerShape(16.dp))
                                     .background(Color.White.copy(alpha = 0.2f)), // Slightly more visible white
                                 contentAlignment = Alignment.Center
@@ -188,30 +209,98 @@ fun SpectroChromeScreen(navController: NavController) {
                     Text(
                         text = "Pick a color",
                         fontSize = 14.sp,
-                        color = Color(0xFF3F51B5) // Keeping the text color consistent with other labels
+                        color = Color(0xFF6A1B9A) // Keeping the text color consistent with other labels
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-// Bordered Box with Icon inside - now with gradient border and icon tint
+                    var selectedColor by remember { mutableStateOf(Color.White) }
+                    var showDialog by remember { mutableStateOf(false) }
+
+                    val controller = rememberColorPickerController()
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp)
                             .border(
                                 width = 1.dp,
-                                // Use the professional gradient for the border, or the last color of it
-                                color = Color(0xFF90CAF9), // Vibrant blue border
+                                color = Color(0xFFCE93D8),
                                 shape = RoundedCornerShape(6.dp)
                             )
-                            .background(Color.White, shape = RoundedCornerShape(6.dp)), // White background
+                            .background(Color.White, shape = RoundedCornerShape(6.dp))
+                            .clickable { showDialog = true }, // show picker on click
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Color Picker",
-                            tint = Color.Gray, // Vibrant blue icon tint
+                            tint = Color.Gray,
                             modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    // Color Picker Dialog
+                    if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDialog = false },
+                            confirmButton = {
+                                TextButton(onClick = { showDialog = false }) {
+                                    Text("Select")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDialog = false }) {
+                                    Text("Cancel")
+                                }
+                            },
+                            title = {
+                                Text(
+                                    text = "Pick a color",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
+                            },
+                            text = {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    // 🌈 Color Spectrum
+                                    HsvColorPicker(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                            .padding(8.dp),
+                                        controller = controller, // ✅ controller required
+                                        onColorChanged = { envelope ->
+                                            selectedColor = envelope.color
+                                        }
+                                    )
+
+                                    // 🌫️ Alpha Slider (transparency)
+                                    AlphaSlider(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        controller = controller // ✅ must pass controller
+                                    )
+
+                                    // HEX, RGB fields
+                                    Text(
+                                        text = "RGB: ${(selectedColor.red * 255).toInt()}, ${(selectedColor.green * 255).toInt()}, ${(selectedColor.blue * 255).toInt()}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(4.dp)
+                                    )
+                                    Text(
+                                        text = "HEX: #${Integer.toHexString(selectedColor.toArgb()).uppercase()}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(4.dp)
+                                    )
+                                }
+                            },
+                            shape = RoundedCornerShape(20.dp)
                         )
                     }
 
@@ -228,13 +317,11 @@ fun SpectroChromeScreen(navController: NavController) {
                                     .fillMaxWidth()
                                     .height(54.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = surfaceLight,
-                                    unfocusedContainerColor = surfaceLight,
-                                    focusedIndicatorColor = purpleDark,
-                                    unfocusedIndicatorColor = borderLight,
-                                    focusedLabelColor = purpleDark,
-                                    unfocusedLabelColor = Color.Gray
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White
                                 )
                             )
                         }
@@ -256,13 +343,11 @@ fun SpectroChromeScreen(navController: NavController) {
                                         .fillMaxWidth()
                                         .height(54.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = surfaceLight,
-                                        unfocusedContainerColor = surfaceLight,
-                                        focusedIndicatorColor = purpleDark,
-                                        unfocusedIndicatorColor = borderLight,
-                                        focusedLabelColor = purpleDark,
-                                        unfocusedLabelColor = Color.Gray
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White
                                     )
                                 )
                                 ExposedDropdownMenu(
@@ -305,13 +390,11 @@ fun SpectroChromeScreen(navController: NavController) {
                                         .fillMaxWidth()
                                         .height(54.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = surfaceLight,
-                                        unfocusedContainerColor = surfaceLight,
-                                        focusedIndicatorColor = purpleDark,
-                                        unfocusedIndicatorColor = borderLight,
-                                        focusedLabelColor = purpleDark,
-                                        unfocusedLabelColor = Color.Gray
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White
                                     )
                                 )
                                 ExposedDropdownMenu(
@@ -348,13 +431,11 @@ fun SpectroChromeScreen(navController: NavController) {
                                         .fillMaxWidth()
                                         .height(54.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = surfaceLight,
-                                        unfocusedContainerColor = surfaceLight,
-                                        focusedIndicatorColor = purpleDark,
-                                        unfocusedIndicatorColor = borderLight,
-                                        focusedLabelColor = purpleDark,
-                                        unfocusedLabelColor = Color.Gray
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White
                                     )
                                 )
                                 ExposedDropdownMenu(
@@ -412,15 +493,19 @@ fun SpectroChromeScreen(navController: NavController) {
                         }
                     }
 
+                    var showSaveDialog by remember { mutableStateOf(false) }
+                    var remedyName by remember { mutableStateOf("") }
+
+// --- Your existing "Save as" button ---
                     Button(
-                        onClick = {},
+                        onClick = { showSaveDialog = true }, // open dialog
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
-                            .background(professionalEnergyGradient, RoundedCornerShape(50)), // Apply gradient
+                            .background(professionalEnergyGradient, RoundedCornerShape(50)),
                         shape = RoundedCornerShape(50),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent, // Make button transparent to show gradient
+                            containerColor = Color.Transparent,
                             contentColor = Color.White
                         )
                     ) {
@@ -434,6 +519,76 @@ fun SpectroChromeScreen(navController: NavController) {
                             imageVector = Icons.Default.Save,
                             contentDescription = "Save",
                             tint = Color.White
+                        )
+                    }
+                    val hexColor = "#${Integer.toHexString(selectedColor.toArgb()).uppercase()}"
+
+// --- AlertDialog for Enter Remedy Name ---
+                    // --- AlertDialog for Enter Remedy Name ---
+                    if (showSaveDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showSaveDialog = false },
+                            title = {
+                                Text(
+                                    text = "Enter Remedy Name",
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            },
+                            text = {
+                                OutlinedTextField(
+                                    value = remedyName,
+                                    onValueChange = { remedyName = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text("Remedy Name") },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedContainerColor = Color(0xFFF5F5F5),
+                                        unfocusedContainerColor = Color(0xFFF5F5F5)
+                                    )
+                                )
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        if (remedyName.isNotBlank()) {
+                                            val item = RealTimeUser.RealTimeItems(
+                                                userFirstName = "",
+                                                email = "",
+                                                password = "",
+                                                remedyName = remedyName,
+                                                remedyInfo = "SpectroChrome Remedy",
+                                                potency = potency,
+                                                scale = selectedScale,
+                                                units = selectedUnits,
+                                                timer = selectedTimer,
+                                                color = hexColor
+                                            )
+
+                                            // ✅ Just call insert (no collect in UI)
+                                            realTimeViewModel.insert(item)
+
+                                            // UI reset
+                                            remedyName = ""
+                                            showSaveDialog = false
+                                        } else {
+                                            Toast.makeText(context, "Please enter remedy name", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                ) {
+                                    Text("Save", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            ,
+                            dismissButton = {
+                                TextButton(onClick = { showSaveDialog = false }) {
+                                    Text("Cancel")
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp)
                         )
                     }
 
@@ -466,17 +621,20 @@ fun AppDrawerSpectroChrome(
 ) {
     val professionalEnergyGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF3F51B5), // Indigo
-            Color(0xFF2196F3)  // Blue
+            Color(0xFF9C27B0), // Indigo
+            Color(0xFFBA68C8)  // Blue
         )
     )
     val backgroundGradient = Brush.verticalGradient(
-        listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)) // Light bluish background for a professional feel
+        listOf(Color(0xFFF3E5F5), Color(0xFFE1BEE7)) // Light bluish background for a professional feel
     )
 
     // Using colors from the gradient for consistency
-    val iconColor = Color(0xFF3F51B5) // Indigo from the professional gradient
-    val textColor = Color(0xFF2C3E50) // Darker text for professionalism
+    val iconColor = Color(0xFF8E24AA) // Indigo from the professional gradient
+    val textColor = Color(0xFF6A1B9A) // Darker text for professionalism
+
+
+
 
     Column(
         modifier = Modifier

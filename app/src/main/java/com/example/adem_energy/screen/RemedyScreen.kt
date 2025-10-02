@@ -1,13 +1,14 @@
 package com.example.adem_energy.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -30,8 +31,10 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Whatsapp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,16 +42,20 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,67 +68,74 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.adem_energy.R // Ensure this R is correct for your project
+import com.example.adem_energy.R
+import com.example.adem_energy.firebase.ResultState
+import com.example.adem_energy.realtime_firebase.RealTimeDbRepository
+import com.example.adem_energy.realtime_firebase.RealTimeUser
+import com.example.adem_energy.realtime_firebase.RealTimeViewModel
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemedyScreen(navController: NavController) {
+
+    // 🌌 PURPLE THEME
     val professionalEnergyGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF3F51B5), // Indigo
-            Color(0xFF2196F3)  // Blue
-        )
+        colors = listOf(Color(0xFF8E24AA), Color(0xFFBA68C8))
     )
     val backgroundGradient = Brush.verticalGradient(
-        listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)) // Light bluish background for a professional feel
+        listOf(Color(0xFFF3E5F5), Color(0xFFE1BEE7))
     )
-    val surfaceGray = Color(0xFFF2F2F2)
-    val borderGray = Color(0xFFB0B0B0)
-    val textColor = Color(0xFF333333)
+    val textColor = Color(0xFF4A148C)
+    val purpleDark = Color(0xFF6A1B9A)
+    val scope = rememberCoroutineScope()
+    // Firebase
+    val context = LocalContext.current
+    val databaseReference = FirebaseDatabase.getInstance().reference.child("remedies")
+    val repository = remember { RealTimeDbRepository(databaseReference, context) }
+    val realTimeViewModel = remember { RealTimeViewModel(repository) }
 
+    // States
+    val remedies = remember { mutableStateListOf<String>() }
+    LaunchedEffect(Unit) { if (remedies.isEmpty()) remedies.add("") }
 
-
-    // Use state list for remedies
-    val remedies = remember { mutableStateListOf("") }
-    // Original colors (some might be replaced or adjusted)
-    val purpleDark = Color(0xFF3F51B5) // Using the indigo from your gradient for consistency
-    val surfaceLight = Color(0xFFF0F8FF) // A very light blue for surface elements
-    val borderLight = Color(0xFF90CAF9) // A light blue for borders
-
-    var textField by remember { mutableStateOf("") }
     var potency by remember { mutableStateOf("") }
-
     val scales = listOf("Q", "X", "C", "D", "M", "CM", "MM", "LM")
-    var selectedScale by remember { mutableStateOf("Q") }
+    var selectedScale by remember { mutableStateOf(scales.first()) }
     var scaleExpanded by remember { mutableStateOf(false) }
 
     val units = listOf("130", "180", "230", "247", "248", "249")
-    var selectedUnits by remember { mutableStateOf("130") }
+    var selectedUnits by remember { mutableStateOf(units.first()) }
     var unitsExpanded by remember { mutableStateOf(false) }
 
     val timers = listOf("10 Sec", "20 Sec", "30 Sec", "60 Sec")
-    var selectedTimer by remember { mutableStateOf("30 Sec") }
+    var selectedTimer by remember { mutableStateOf(timers[2]) }
     var timerExpanded by remember { mutableStateOf(false) }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var remedyName by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
+    // 🟣 Drawer
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            // Apply background gradient to the drawer surface
             Surface(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(280.dp)
-                    .background(backgroundGradient) // Apply gradient here
+                    .background(backgroundGradient)
             ) {
                 AppDrawerRemedy(navController = navController) { drawerItemKey ->
                     coroutineScope.launch { drawerState.close() }
@@ -134,8 +148,14 @@ fun RemedyScreen(navController: NavController) {
             }
         }
     ) {
-        Surface(modifier = Modifier.fillMaxSize().background(backgroundGradient)) { // Main background gradient
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundGradient)
+        ) {
             Column(modifier = Modifier.fillMaxSize()) {
+
+                // 🟣 Top Bar
                 TopAppBar(
                     title = {
                         Row(
@@ -144,9 +164,9 @@ fun RemedyScreen(navController: NavController) {
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(64.dp)
+                                    .size(60.dp)
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(Color.White.copy(alpha = 0.2f)), // Slightly more visible white
+                                    .background(Color.White.copy(alpha = 0.2f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Image(
@@ -157,7 +177,7 @@ fun RemedyScreen(navController: NavController) {
                             }
                             Text(
                                 text = "Specific Remedies",
-                                color = Color.White, // Text color on top app bar should be white
+                                color = Color.White,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 18.sp
                             )
@@ -168,90 +188,84 @@ fun RemedyScreen(navController: NavController) {
                             Icon(
                                 Icons.Default.ArrowBack,
                                 contentDescription = "Back",
-                                tint = Color.White // Icon color on top app bar should be white
+                                tint = Color.White
                             )
                         }
                     },
                     actions = {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                drawerState.open()
-                            }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White) // Icon color white
+                        IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                            Icon(
+                                Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color.White
+                            )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent), // Set to transparent
-                    modifier = Modifier.background(professionalEnergyGradient) // Apply gradient directly
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    modifier = Modifier.background(professionalEnergyGradient)
                 )
 
+                // 🟣 Main Content
                 Column(
                     modifier = Modifier
-                        .background(backgroundGradient) // Apply gradient to content column
-                        .fillMaxWidth().verticalScroll(rememberScrollState())
+                        .background(backgroundGradient)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
                     Text(
-                        text = "Enter Remedy Information",
+                        "Enter Remedy Information",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = textColor // Keep original textColor for this label
+                        color = textColor
                     )
 
+                    // Remedy List
                     remedies.forEachIndexed { index, remedy ->
                         OutlinedTextField(
                             value = remedy,
-                            onValueChange = { newValue ->
-                                // Assuming remedies is a MutableList<String>
-                                // If remedies is a mutableStateListOf, direct assignment works:
-                                // remedies[index] = newValue
-                                // If it's a regular list, you might need to update the state holding the list
-                                val newList = remedies.toMutableList()
-                                newList[index] = newValue
-                                // Then update the state (e.g., if remedies is a mutableStateOf(listOf(...)))
-                                // remedies = newList // This line depends on how 'remedies' is declared
-                            },
+                            onValueChange = { remedies[index] = it },
                             placeholder = { Text("Enter Remedy") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                // Removed direct border here, as OutlinedTextField usually handles its own border
                                 .height(55.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = surfaceLight,
-                                unfocusedContainerColor = surfaceLight,
-                                focusedIndicatorColor = purpleDark,
-                                unfocusedIndicatorColor = borderLight,
-                                focusedLabelColor = purpleDark,
-                                unfocusedLabelColor = Color.Gray
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
                             )
                         )
                     }
 
-                    OutlinedButton(
-                        onClick = { remedies.add("") },
-                        modifier = Modifier
-                            .fillMaxWidth() .background(professionalEnergyGradient, shape = RoundedCornerShape(12.dp))
-                            .height(50.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, borderLight),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = textColor,
-                            containerColor = Color.White // Explicitly set background if needed
-                        )
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add", tint = textColor)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Add Remedy", fontWeight = FontWeight.Medium, color = textColor)
+                    // ✅ Limit to 4 remedies max
+                    if (remedies.size < 4) {
+                        OutlinedButton(
+                            onClick = { remedies.add("") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color.Transparent),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = textColor,
+                                containerColor = Color.White
+                            )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add", tint = textColor)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Add Remedy", fontWeight = FontWeight.Medium, color = textColor)
+                        }
                     }
 
-
+                    // Potency + Scale Row
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(Modifier.weight(1f)) {
                             Text("Potency", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = purpleDark)
                             OutlinedTextField(
                                 value = potency,
@@ -260,22 +274,19 @@ fun RemedyScreen(navController: NavController) {
                                     .fillMaxWidth()
                                     .height(54.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = surfaceLight,
-                                    unfocusedContainerColor = surfaceLight,
-                                    focusedIndicatorColor = purpleDark,
-                                    unfocusedIndicatorColor = borderLight,
-                                    focusedLabelColor = purpleDark,
-                                    unfocusedLabelColor = Color.Gray
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedContainerColor = Color.White,
+                                    unfocusedContainerColor = Color.White
                                 )
                             )
                         }
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(Modifier.weight(1f)) {
                             Text("Scale", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = purpleDark)
                             ExposedDropdownMenuBox(
                                 expanded = scaleExpanded,
-                                onExpandedChange = { scaleExpanded = it }
-                            ) {
+                                onExpandedChange = { scaleExpanded = it }) {
                                 OutlinedTextField(
                                     value = selectedScale,
                                     onValueChange = {},
@@ -288,26 +299,20 @@ fun RemedyScreen(navController: NavController) {
                                         .fillMaxWidth()
                                         .height(54.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = surfaceLight,
-                                        unfocusedContainerColor = surfaceLight,
-                                        focusedIndicatorColor = purpleDark,
-                                        unfocusedIndicatorColor = borderLight,
-                                        focusedLabelColor = purpleDark,
-                                        unfocusedLabelColor = Color.Gray
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White
                                     )
                                 )
                                 ExposedDropdownMenu(
                                     expanded = scaleExpanded,
-                                    onDismissRequest = { scaleExpanded = false }
-                                ) {
+                                    onDismissRequest = { scaleExpanded = false }) {
                                     scales.forEach { value ->
                                         DropdownMenuItem(
                                             text = { Text(value) },
-                                            onClick = {
-                                                selectedScale = value
-                                                scaleExpanded = false
-                                            }
+                                            onClick = { selectedScale = value; scaleExpanded = false }
                                         )
                                     }
                                 }
@@ -315,16 +320,16 @@ fun RemedyScreen(navController: NavController) {
                         }
                     }
 
+                    // Units + Timer Row
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(Modifier.weight(1f)) {
                             Text("Units", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = purpleDark)
                             ExposedDropdownMenuBox(
                                 expanded = unitsExpanded,
-                                onExpandedChange = { unitsExpanded = it }
-                            ) {
+                                onExpandedChange = { unitsExpanded = it }) {
                                 OutlinedTextField(
                                     value = selectedUnits,
                                     onValueChange = {},
@@ -337,37 +342,30 @@ fun RemedyScreen(navController: NavController) {
                                         .fillMaxWidth()
                                         .height(54.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = surfaceLight,
-                                        unfocusedContainerColor = surfaceLight,
-                                        focusedIndicatorColor = purpleDark,
-                                        unfocusedIndicatorColor = borderLight,
-                                        focusedLabelColor = purpleDark,
-                                        unfocusedLabelColor = Color.Gray
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White
                                     )
                                 )
                                 ExposedDropdownMenu(
                                     expanded = unitsExpanded,
-                                    onDismissRequest = { unitsExpanded = false }
-                                ) {
+                                    onDismissRequest = { unitsExpanded = false }) {
                                     units.forEach { value ->
                                         DropdownMenuItem(
                                             text = { Text(value) },
-                                            onClick = {
-                                                selectedUnits = value
-                                                unitsExpanded = false
-                                            }
+                                            onClick = { selectedUnits = value; unitsExpanded = false }
                                         )
                                     }
                                 }
                             }
                         }
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(Modifier.weight(1f)) {
                             Text("Timer", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = purpleDark)
                             ExposedDropdownMenuBox(
                                 expanded = timerExpanded,
-                                onExpandedChange = { timerExpanded = it }
-                            ) {
+                                onExpandedChange = { timerExpanded = it }) {
                                 OutlinedTextField(
                                     value = selectedTimer,
                                     onValueChange = {},
@@ -380,26 +378,20 @@ fun RemedyScreen(navController: NavController) {
                                         .fillMaxWidth()
                                         .height(54.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = surfaceLight,
-                                        unfocusedContainerColor = surfaceLight,
-                                        focusedIndicatorColor = purpleDark,
-                                        unfocusedIndicatorColor = borderLight,
-                                        focusedLabelColor = purpleDark,
-                                        unfocusedLabelColor = Color.Gray
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color.White
                                     )
                                 )
                                 ExposedDropdownMenu(
                                     expanded = timerExpanded,
-                                    onDismissRequest = { timerExpanded = false }
-                                ) {
+                                    onDismissRequest = { timerExpanded = false }) {
                                     timers.forEach { value ->
                                         DropdownMenuItem(
                                             text = { Text(value) },
-                                            onClick = {
-                                                selectedTimer = value
-                                                timerExpanded = false
-                                            }
+                                            onClick = { selectedTimer = value; timerExpanded = false }
                                         )
                                     }
                                 }
@@ -407,90 +399,169 @@ fun RemedyScreen(navController: NavController) {
                         }
                     }
 
+                    // Buttons Row
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Button(
-                            onClick = { /* TODO: Resonante Action */ },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(50.dp)
-                                .background(professionalEnergyGradient, RoundedCornerShape(8.dp)), // Apply gradient
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent, // Make button transparent to show gradient
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Text("RESONATE", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        }
+                        GradientButton(
+                            text = "RESONATE",
+                            gradient = professionalEnergyGradient,
+                            modifier = Modifier.weight(1f)
+                        ) { /* TODO */ }
 
-                        Button(
-                            onClick = { /* TODO: Imprint Action */ },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(50.dp)
-                                .background(professionalEnergyGradient, RoundedCornerShape(8.dp)), // Apply gradient
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent, // Make button transparent to show gradient
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Text("IMPRINT", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        }
+                        GradientButton(
+                            text = "IMPRINT",
+                            gradient = professionalEnergyGradient,
+                            modifier = Modifier.weight(1f)
+                        ) { /* TODO */ }
                     }
 
+                    // Save Button
                     Button(
-                        onClick = {},
+                        onClick = { showDialog = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
-                            .background(professionalEnergyGradient, RoundedCornerShape(50)), // Apply gradient
-                        shape = RoundedCornerShape(50),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent, // Make button transparent to show gradient
-                            contentColor = Color.White
-                        )
+                            .clip(RoundedCornerShape(50)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues()
                     ) {
-                        Text(
-                            "Save as",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.Save,
-                            contentDescription = "Save",
-                            tint = Color.White
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(professionalEnergyGradient, RoundedCornerShape(50)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "Save as",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Icon(
+                                    Icons.Default.Save,
+                                    contentDescription = "Save",
+                                    tint = Color.White
+                                )
+                            }
+                        }
                     }
 
-
-                    Box(
+                    // Info Text
+                    Text(
+                        text = "This screen is programmed to receive all vibrations to make remedies or to pass the vibrations to patients via witness and will not store any vibrations that are passed through it.",
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "This screen is programmed to receive all vibrations to make remedies or to pass the vibrations to patients via witness and will not store any vibrations that are passed through it.",
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center, // center text align
-                            color = Color.Gray, // Keep text gray for information
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-
+                            .padding(16.dp)
+                    )
                 }
             }
+        }
+
+        // 🟣 Dialog
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = {
+                    Text(
+                        "Enter Remedy Name",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                },
+                text = {
+                    OutlinedTextField(
+                        value = remedyName,
+                        onValueChange = { remedyName = it },
+                        placeholder = { Text("Remedy Name") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF2F2F2)),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedContainerColor = Color(0xFFF2F2F2)
+                        )
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (remedyName.isNotBlank()) {
+                                isLoading = true
+                                val item = RealTimeUser.RealTimeItems(
+                                    userFirstName = "Demo",
+                                    email = "",
+                                    password = "",
+                                    remedyName = remedyName,
+                                    remedyInfo = remedies.joinToString(", "),
+                                    potency = potency,
+                                    scale = selectedScale,
+                                    units = selectedUnits,
+                                    timer = selectedTimer,
+                                    color = ""
+                                )
+
+                                // ✅ Just call insert, no collect here
+                                realTimeViewModel.insert(item)
+
+                                // Reset UI immediately, observe success/error from state
+                                isLoading = false
+                                showDialog = false
+                                remedyName = ""
+                            }
+                        }
+                    ) {
+                        Text("Save", fontWeight = FontWeight.Bold)
+                    }
+                }
+                ,
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+                }
+            )
         }
     }
 }
 
+@Composable
+fun GradientButton(
+    text: String,
+    gradient: Brush,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(50.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+        contentPadding = PaddingValues(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradient, RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text, color = Color.White, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+
+// 🟣 Reusable Gradient Button
 
 @Composable
 fun AppDrawerRemedy(
@@ -500,17 +571,23 @@ fun AppDrawerRemedy(
     // Professional Gradient Definitions
     val professionalEnergyGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF3F51B5), // Indigo
-            Color(0xFF2196F3)  // Blue
+            Color(0xFF9C27B0), // Indigo
+            Color(0xFFBA68C8)  // Blue
         )
     )
     val backgroundGradient = Brush.verticalGradient(
-        listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)) // Light bluish background for a professional feel
+        listOf(
+            Color(0xFFF3E5F5),
+            Color(0xFFE1BEE7)
+        ) // Light bluish background for a professional feel
     )
 
     // Using colors from the gradient for consistency
-    val iconColor = Color(0xFF3F51B5) // Indigo from the professional gradient
-    val textColor = Color(0xFF2C3E50) // Darker text for professionalism
+    val iconColor = Color(0xFF8E24AA) // Indigo from the professional gradient
+    val textColor = Color(0xFF6A1B9A) // Darker text for professionalism
+
+
+
 
     Column(
         modifier = Modifier
@@ -646,3 +723,4 @@ fun DrawerItemRemedy(
         )
     }
 }
+

@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.adem_energy" />
+                  <option name="mobileSdkAppId" value="1:968630954443:android:8416917b7cd4cd5482ee4e" />
+                  <option name="projectId" value="adem-energy" />
+                  <option name="projectNumber" value="968630954443" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

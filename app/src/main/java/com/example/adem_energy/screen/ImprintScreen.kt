@@ -32,21 +32,27 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImprintScreen(navController: NavController) {
-    // Professional color palette based on your gradients
-    val primaryBlue = Color(0xFF3F51B5) // Indigo from your gradient
-    val secondaryBlue = Color(0xFF2196F3) // Blue from your gradient
-    val lightBackground = Color(0xFFE3F2FD) // Light blueish background start
-    val lighterBackground = Color(0xFFBBDEFB) // Light blueish background end
-    val textGray = Color(0xFF505050) // Darker gray for text for better contrast
-    val backgroundGradient = Brush.verticalGradient( listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)))
+    // 🌸 Purple Theme Palette
+    val primaryPurple = Color(0xFF9C27B0)   // Deep Purple
+    val secondaryPurple = Color(0xFFBA68C8) // Light Purple
+    val lightBackground = Color(0xFFF3E5F5) // Lavender
+    val lighterBackground = Color(0xFFE1BEE7) // Light Purple
+    val textGray = Color(0xFF505050)
 
-        val professionalEnergyGradient = Brush.verticalGradient(
-        colors = listOf(
-            primaryBlue, // Indigo
-            secondaryBlue // Blue
-        )
+    val backgroundGradient = Brush.verticalGradient(
+        listOf(lightBackground, lighterBackground)
     )
 
+    val purpleEnergyGradient = Brush.verticalGradient(
+        colors = listOf(primaryPurple, secondaryPurple)
+    )
+
+    val headerGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFF9C27B0), // Purple
+            Color(0xFFBA68C8)  // Light Purple
+        )
+    )
     var textField by remember { mutableStateOf("") }
     var potency by remember { mutableStateOf("") }
 
@@ -68,7 +74,6 @@ fun ImprintScreen(navController: NavController) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            // The drawer content will use updated professional colors
             Surface(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -88,11 +93,11 @@ fun ImprintScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundGradient) // ⬅️ Gradient applied here
+                .background(backgroundGradient) // ✅ Lavender Gradient
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = Color.Transparent // ⬅️ Keep surface transparent
+                color = Color.Transparent
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     // ✅ Top Bar
@@ -104,7 +109,7 @@ fun ImprintScreen(navController: NavController) {
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(64.dp)
+                                        .size(60.dp)
                                         .clip(RoundedCornerShape(16.dp))
                                         .background(Color.White.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
@@ -117,7 +122,7 @@ fun ImprintScreen(navController: NavController) {
                                 }
                                 Text(
                                     text = "Holistic Remedies",
-                                    color = Color.White, // White text looks better on gradient
+                                    color = Color.White,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 18.sp
                                 )
@@ -128,7 +133,7 @@ fun ImprintScreen(navController: NavController) {
                                 Icon(
                                     Icons.Default.ArrowBack,
                                     contentDescription = "Back",
-                                    tint = Color.White // White icons on gradient
+                                    tint = Color.White
                                 )
                             }
                         },
@@ -144,9 +149,10 @@ fun ImprintScreen(navController: NavController) {
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent, // Transparent so gradient shows
+                            containerColor = Color.Transparent,
                             titleContentColor = Color.White
-                        )
+                        ),
+                        modifier = Modifier.background(headerGradient)
                     )
 
                     // ✅ Content Section
@@ -170,12 +176,8 @@ fun ImprintScreen(navController: NavController) {
                                 focusedContainerColor = Color.White,
                                 unfocusedContainerColor = Color.White
                             ),
-
                             placeholder = {
-                                Text(
-                                    "Enter remedy name",
-                                    color = textGray.copy(alpha = 0.6f)
-                                )
+                                Text("Enter remedy name", color = textGray.copy(alpha = 0.6f))
                             }
                         )
 
@@ -185,12 +187,7 @@ fun ImprintScreen(navController: NavController) {
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Potency",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = textGray
-                                )
+                                Text("Potency", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = textGray)
                                 OutlinedTextField(
                                     value = potency,
                                     onValueChange = { potency = it },
@@ -207,12 +204,7 @@ fun ImprintScreen(navController: NavController) {
                                 )
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Scale",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = textGray
-                                )
+                                Text("Scale", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = textGray)
                                 ExposedDropdownMenuBox(
                                     expanded = scaleExpanded,
                                     onExpandedChange = { scaleExpanded = it }
@@ -260,12 +252,7 @@ fun ImprintScreen(navController: NavController) {
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Units",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = textGray
-                                )
+                                Text("Units", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = textGray)
                                 ExposedDropdownMenuBox(
                                     expanded = unitsExpanded,
                                     onExpandedChange = { unitsExpanded = it }
@@ -306,12 +293,7 @@ fun ImprintScreen(navController: NavController) {
                                 }
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Timer",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = textGray
-                                )
+                                Text("Timer", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = textGray)
                                 ExposedDropdownMenuBox(
                                     expanded = timerExpanded,
                                     onExpandedChange = { timerExpanded = it }
@@ -360,12 +342,12 @@ fun ImprintScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .height(56.dp)
                                 .background(
-                                    brush = professionalEnergyGradient,
+                                    brush = purpleEnergyGradient, // ✅ Purple Gradient
                                     shape = RoundedCornerShape(12.dp)
-                                ), // Apply professional gradient to button
+                                ),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent, // Make container transparent as background handles color
+                                containerColor = Color.Transparent,
                                 contentColor = Color.White
                             )
                         ) {
@@ -383,7 +365,7 @@ fun ImprintScreen(navController: NavController) {
                                 text = "This screen is programmed to receive all vibrations to make remedies or to pass the vibrations to patients via witness and will not store any vibrations that are passed through it.",
                                 fontSize = 12.sp,
                                 textAlign = TextAlign.Center,
-                                color = textGray.copy(alpha = 0.7f), // Slightly lighter gray for info text
+                                color = textGray.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(8.dp)
                             )
                         }
@@ -393,39 +375,33 @@ fun ImprintScreen(navController: NavController) {
         }
     }
 }
+
 @Composable
 fun AppDrawer(
     navController: NavController,
     onItemClick: (String) -> Unit
 ) {
-    // Professional color palette for drawer
-    val drawerBackgroundLight = Color(0xFFF0F6FC) // Very light blue for drawer background
-    val headerGradient = Brush.verticalGradient(
+    // 🌸 Purple Theme for Drawer
+    val drawerBackgroundLight = Color(0xFFF8EAF6) // Very light lavender
+    val headerGradient = Brush.horizontalGradient(
         colors = listOf(
-            Color(0xFF3F51B5), // Indigo
-            Color(0xFF2196F3) // Blue
+            Color(0xFF9C27B0), // Purple
+            Color(0xFFBA68C8)  // Light Purple
         )
     )
-    val drawerIconColor = Color(0xFF1976D2) // A strong blue for icons
-    val drawerTextColor = Color(0xFF303F9F) // A deep blue for text
+    val drawerIconColor = Color(0xFF8E24AA) // Deep purple for icons
+    val drawerTextColor = Color(0xFF6A1B9A) // Dark purple for text
 
     Column(
         modifier = Modifier
             .fillMaxHeight(0.9f)
-            .background(drawerBackgroundLight) // Apply light blue background
+            .background(drawerBackgroundLight)
     ) {
         // ✅ Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient( // ✅ Horizontal gradient for modern look
-                        colors = listOf(
-                            Color(0xFF3F51B5), // Indigo
-                            Color(0xFF2196F3)  // Blue
-                        )
-                    )
-                )
+                .background(headerGradient)
                 .padding(vertical = 24.dp, horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -433,7 +409,6 @@ fun AppDrawer(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // ✅ App Logo with rounded background
                 Box(
                     modifier = Modifier
                         .size(64.dp)
@@ -448,7 +423,6 @@ fun AppDrawer(
                     )
                 }
 
-                // ✅ Text section
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -467,7 +441,6 @@ fun AppDrawer(
                 }
             }
         }
-
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -503,13 +476,13 @@ fun AppDrawer(
                 .padding(16.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .clickable { /* TODO: Open WhatsApp or support */ }
+                .clickable { /* TODO: Support */ }
                 .padding(12.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    painter = painterResource(id = R.drawable.logo), // ✅ custom WhatsApp icon from drawable
+                    painter = painterResource(id = R.drawable.logo),
                     contentDescription = "Help",
                     tint = drawerIconColor,
                     modifier = Modifier.size(24.dp)

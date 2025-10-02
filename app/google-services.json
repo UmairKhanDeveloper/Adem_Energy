@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "968630954443",
+    "project_id": "adem-energy",
+    "storage_bucket": "adem-energy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:968630954443:android:8416917b7cd4cd5482ee4e",
+        "android_client_info": {
+          "package_name": "com.example.adem_energy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-0X9zkDojLz6FrRr9agOeV5F1vNQ_vIY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
