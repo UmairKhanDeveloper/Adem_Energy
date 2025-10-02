@@ -1,7 +1,5 @@
 package com.example.adem_energy.screen
 
-
-
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.adem_energy.realtime_firebase.RealTimeDbRepository
 import com.example.adem_energy.realtime_firebase.RealTimeUser
@@ -34,11 +35,19 @@ fun LibraryScreen(navController: NavController) {
     val context = LocalContext.current
     val databaseReference = FirebaseDatabase.getInstance().reference
     val repository = remember { RealTimeDbRepository(databaseReference, context) }
-    val realTimeViewModel = remember { RealTimeViewModel(repository) }
+
+    // ✅ Proper ViewModel creation
+    val realTimeViewModel: RealTimeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return RealTimeViewModel(repository) as T
+            }
+        }
+    )
 
     val state = realTimeViewModel.res.value
 
-    // 🔄 Fetch data from DB
+    // 🔄 Fetch data from DB when screen loads
     LaunchedEffect(Unit) {
         realTimeViewModel.getItems()
     }
@@ -123,7 +132,13 @@ fun LibraryScreen(navController: NavController) {
                             title = user.items.remedyName,
                             iconColor = iconColor,
                             titleColor = titleColor,
-                            onHistoryClick = { selectedItem = user }
+                            onHistoryClick = { selectedItem = user },
+                            onDeleteClick = {
+                                user.key?.let {
+                                    realTimeViewModel.delete(it)
+                                    Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         )
                     }
                 }
@@ -163,7 +178,13 @@ fun RemedyDialog(item: RealTimeUser, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun LibraryItemCard(title: String, iconColor: Color, titleColor: Color, onHistoryClick: () -> Unit) {
+fun LibraryItemCard(
+    title: String,
+    iconColor: Color,
+    titleColor: Color,
+    onHistoryClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -200,11 +221,9 @@ fun LibraryItemCard(title: String, iconColor: Color, titleColor: Color, onHistor
                     tint = iconColor,
                     modifier = Modifier
                         .size(22.dp)
-                        .clickable { /* TODO: delete from Firebase */ }
+                        .clickable { onDeleteClick() }
                 )
             }
         }
     }
 }
-
-

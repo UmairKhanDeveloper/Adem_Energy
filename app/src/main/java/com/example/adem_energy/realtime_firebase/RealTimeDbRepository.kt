@@ -3,6 +3,7 @@ package com.example.adem_energy.realtime_firebase
 import android.content.Context
 import android.provider.Settings
 import com.example.adem_energy.firebase.ResultState
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -16,15 +17,15 @@ class RealTimeDbRepository(
     private val context: Context
 ) : RealTimeRepository {
 
-    private fun getDeviceId(): String {
-        return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
+    private fun getUserId(): String {
+        return FirebaseAuth.getInstance().currentUser?.uid ?: "unknown_user"
     }
 
     override fun insert(item: RealTimeUser.RealTimeItems): Flow<ResultState<String>> =
         callbackFlow {
             trySend(ResultState.Loading)
-            val deviceId = getDeviceId()
-            val userNode = db.child("users").child(deviceId).child("items")
+            val userId = getUserId()
+            val userNode = db.child("users").child(userId).child("items")
             userNode.push().setValue(item)
                 .addOnSuccessListener { trySend(ResultState.Success("Inserted")) }
                 .addOnFailureListener { trySend(ResultState.Error(it)) }
@@ -34,8 +35,8 @@ class RealTimeDbRepository(
     override fun getItems(): Flow<ResultState<List<RealTimeUser>>> = callbackFlow {
         trySend(ResultState.Loading)
 
-        val deviceId = getDeviceId()
-        val userNode = db.child("users").child(deviceId).child("items")
+        val userId = getUserId()
+        val userNode = db.child("users").child(userId).child("items")
 
         val valueEvent = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -61,14 +62,13 @@ class RealTimeDbRepository(
         }
 
         userNode.addValueEventListener(valueEvent)
-
         awaitClose { userNode.removeEventListener(valueEvent) }
     }
 
     override fun delete(key: String): Flow<ResultState<String>> = callbackFlow {
         trySend(ResultState.Loading)
-        val deviceId = getDeviceId()
-        val userNode = db.child("users").child(deviceId).child("items")
+        val userId = getUserId()
+        val userNode = db.child("users").child(userId).child("items")
 
         userNode.child(key).removeValue()
             .addOnSuccessListener { trySend(ResultState.Success("Deleted")) }
@@ -79,8 +79,8 @@ class RealTimeDbRepository(
 
     override fun update(res: RealTimeUser): Flow<ResultState<String>> = callbackFlow {
         trySend(ResultState.Loading)
-        val deviceId = getDeviceId()
-        val userNode = db.child("users").child(deviceId).child("items")
+        val userId = getUserId()
+        val userNode = db.child("users").child(userId).child("items")
 
         val map = hashMapOf<String, Any>(
             "userFirstName" to res.items.userFirstName,

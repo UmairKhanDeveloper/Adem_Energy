@@ -14,12 +14,12 @@ data class ItemsState(
     val isLoading: Boolean = false
 )
 
+// ✅ ViewModel
 class RealTimeViewModel(private val repository: RealTimeRepository) : ViewModel() {
 
     private val _res: MutableState<ItemsState> = mutableStateOf(ItemsState())
     val res: State<ItemsState> = _res
 
-    // call repository and collect result to actually execute the flow
     fun insert(items: RealTimeUser.RealTimeItems) {
         viewModelScope.launch {
             repository.insert(items).collect { result ->

@@ -70,7 +70,6 @@ fun AccountScreen(navController: NavController) {
 
     val userItem = state.item.firstOrNull()?.items
 
-
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -140,7 +139,7 @@ fun AccountScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ✅ Username (pehle DB → phir Auth → phir Default)
+            // ✅ Username (from DB → FirebaseAuth → default)
             Text(
                 text = userItem?.userFirstName?.takeIf { it.isNotBlank() }
                     ?: currentUser?.displayName
@@ -150,7 +149,7 @@ fun AccountScreen(navController: NavController) {
                 color = textDark
             )
 
-            // ✅ Email (pehle DB → phir Auth → phir Default)
+            // ✅ Email (from DB → FirebaseAuth → default)
             Text(
                 text = userItem?.email?.takeIf { it.isNotBlank() }
                     ?: currentUser?.email
@@ -209,7 +208,7 @@ fun AccountScreen(navController: NavController) {
                     user?.delete()?.addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             Toast.makeText(context, "Account Deleted", Toast.LENGTH_SHORT).show()
-                            navController.navigate(Screen.SignUpScreen.route) {
+                            navController.navigate(Screen.AdemEnergyLoginScreen.route) {
                                 popUpTo("account") { inclusive = true }
                             }
                         } else {
